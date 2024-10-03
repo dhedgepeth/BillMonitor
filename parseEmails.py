@@ -20,6 +20,7 @@ FOLDER = "Bills"
 BILL_JSON_FILE = sensitive.EMAIL_JSON
 ID_JSON_FILE = sensitive.ID_JSON
 
+# Used to track message id's for already processed emails
 def add_id_entry(message_id):
     with open(ID_JSON_FILE, 'r') as f:
         current_data = json.load(f) #Get current json list
@@ -29,6 +30,7 @@ def add_id_entry(message_id):
         json.dump(current_data, f, indent=4)
     return None
 
+# Checks whether message id has already been processed
 def id_added(message_id):
     with open(ID_JSON_FILE, 'r') as f:
         current_data = json.load(f) #Get current json list
@@ -38,7 +40,7 @@ def id_added(message_id):
             return True
     return False
 
-#Add processed bills to json file
+# Add processed bills to json file
 def add_email_entry(sender, due_date):
     with open(BILL_JSON_FILE, 'r') as f:
         current_data = json.load(f) #Get current json list
@@ -49,7 +51,7 @@ def add_email_entry(sender, due_date):
     
     return None
 
-#Checks whether a bill has already been processed
+# Checks whether a bill has already been processed
 def bill_added(sender, due_date):
     with open(BILL_JSON_FILE, 'r') as f:
         current_data = json.load(f) #Get current json list
@@ -59,6 +61,7 @@ def bill_added(sender, due_date):
             return True
     return False
 
+# Converts dates in written format to mm/dd/yyyy format
 def convert_date(date_str):
     # Parse the input date string
     try:
@@ -77,7 +80,7 @@ def connect_to_gmail():
 # Search for emails in the "Bills" folder
 def check_for_new_emails(mail):
     mail.select(FOLDER)
-    status, messages = mail.search(None, "UNSEEN")  # You can adjust search criteria here
+    status, messages = mail.search(None, "UNSEEN")  # Search only unread messages
     
     email_ids = messages[0].split()
     new_emails = []
@@ -91,17 +94,18 @@ def check_for_new_emails(mail):
                     new_emails.append((email_id, msg, message_id))
     return new_emails
 
-# Scrape email body for bill amount (e.g. $123.45)
+# Scrape email body for bill amount
 def extract_bill_amount(email_body, sender):
     # Use BeautifulSoup to strip HTML tags
     soup = BeautifulSoup(email_body, "html.parser")
     plain_text = soup.get_text()
     if(sender == BILL_NAMES_LIST[0]): #Checks if message is water bill. Water bill does not contain a $
-         match = re.search(r"Amount Due\s+([0-9]+(?:\.[0-9]{2})?)", plain_text)
+         pattern = r"Amount Due\s+([0-9]+(?:\.[0-9]{2})?)"
     elif(sender == BILL_NAMES_LIST[3]): #checks if message is gas bill
-        match = re.search(r'Amount Due:\s*\$([0-9]+(?:\.[0-9]{2})?)', plain_text)
+        pattern = r"Amount Due:\s*\$([0-9]+(?:\.[0-9]{2})?)"
     else:
-        match = re.search(r"\$([0-9]+(?:\.[0-9]{2})?)", plain_text)
+        pattern = r"\$([0-9]+(?:\.[0-9]{2})?)"
+    match = re.search(pattern, plain_text)
     if match:
         return match.group(1)
     return None
@@ -110,7 +114,6 @@ def extract_due_date(email_body, sender):
     # Use BeautifulSoup to strip HTML tags
     soup = BeautifulSoup(email_body, "html.parser")
     plain_text = soup.get_text()
-    print(sender)
     if(sender != BILL_NAMES_LIST[1] and sender != BILL_NAMES_LIST[3]):
         if(sender == BILL_NAMES_LIST[0]):
             pattern = r"Due Date\s*(\d{2}/\d{2}/\d{2})"
@@ -123,7 +126,6 @@ def extract_due_date(email_body, sender):
     elif(sender == BILL_NAMES_LIST[1]): #checks if current bill is spectrum
         pattern = r'Auto Pay Date:\s*([A-Z][a-z]+ \d{1,2}, \d{4})'
         match = re.search(pattern, plain_text)
-        print(f"Match group 1: {match.group(1)}")
         full_date = f"{match.group(1)}"
         final_date = convert_date(full_date)
         return final_date
@@ -160,7 +162,7 @@ def process_email_parts(msg, message_id, sender):
                 if email_body:
                     bill_amount = extract_bill_amount(email_body, sender)
                     due_date = extract_due_date(email_body, sender)
-                    if not bill_added(sender, due_date):
+                    if not bill_added(sender, due_date): # Check whether a notification has already been sent about this bill
                         print(f"Found due date: {due_date}")
                         if bill_amount:
                             print(f"Found bill amount: {bill_amount}")
@@ -180,7 +182,7 @@ def process_email_parts(msg, message_id, sender):
         if email_body:
             bill_amount = extract_bill_amount(email_body, sender)
             due_date = extract_due_date(email_body, sender)
-            if not bill_added(sender, due_date):
+            if not bill_added(sender, due_date): # Check whether a notification has already been sent about this bill
                 print(f"Found due date: {due_date}")
                 if bill_amount:
                     print(f"Found bill amount: {bill_amount}")
