@@ -1,0 +1,22 @@
+# BillMonitor dependencies
+#
+# These are installed via the AppDaemon add-on configuration in Home Assistant,
+# NOT via pip directly on the Pi. In the AppDaemon add-on config UI, add these
+# under "python_packages":
+#
+#   google-api-python-client
+#   google-auth-oauthlib
+#   google-auth-httplib2
+#   beautifulsoup4
+#   requests
+#   pyyaml
+#
+# For running setup_auth.py locally on your desktop:
+#   pip install google-auth-oauthlib
+
+google-api-python-client
+google-auth-oauthlib
+google-auth-httplib2
+beautifulsoup4
+requests
+pyyaml

@@ -1,0 +1,16 @@
+# OAuth credentials and tokens — never commit these
+credentials.json
+token.json
+
+# Runtime database
+*.db
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# macOS
+.DS_Store
